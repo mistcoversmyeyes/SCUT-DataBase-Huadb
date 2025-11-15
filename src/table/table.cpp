@@ -1,14 +1,15 @@
 #include "table/table.h"
 
-#include "table/table_page.h"
+#include "common/types.h"
+#include "table/page_header.h"
 
 namespace huadb {
 
-Table::Table(BufferPool &buffer_pool, LogManager &log_manager, oid_t oid, oid_t db_oid, ColumnList column_list,
+Table::Table(BufferPool &buffer_pool, LogManager &log_manager, oid_t table_oid, oid_t db_oid, ColumnList column_list,
              bool new_table, bool is_empty)
     : buffer_pool_(buffer_pool),
       log_manager_(log_manager),
-      oid_(oid),
+      table_oid_(table_oid),
       db_oid_(db_oid),
       column_list_(std::move(column_list)) {
   if (new_table || is_empty) {
@@ -56,13 +57,13 @@ Rid Table::UpdateRecord(const Rid &rid, xid_t xid, cid_t cid, std::shared_ptr<Re
 
 void Table::UpdateRecordInPlace(const Record &record) {
   auto rid = record.GetRid();
-  auto table_page = std::make_unique<TablePage>(buffer_pool_.GetPage(db_oid_, oid_, rid.page_id_));
-  table_page->UpdateRecordInPlace(record, rid.slot_id_);
+  auto page_header = std::make_unique<PageHeader>(buffer_pool_.GetPage(db_oid_, table_oid_, rid.page_id_));
+  page_header->UpdateRecordInPlace(record, rid.slot_id_);
 }
 
 pageid_t Table::GetFirstPageId() const { return first_page_id_; }
 
-oid_t Table::GetOid() const { return oid_; }
+oid_t Table::GetTableOid() const { return table_oid_; }
 
 oid_t Table::GetDbOid() const { return db_oid_; }
 

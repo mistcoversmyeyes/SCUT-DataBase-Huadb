@@ -3,7 +3,7 @@
 #include "common/constants.h"
 #include "common/exceptions.h"
 #include "log/log_manager.h"
-#include "table/table_page.h"
+#include "table/page_header.h"
 
 namespace huadb {
 
@@ -87,7 +87,7 @@ void BufferPool::FlushPage(size_t frame_id) {
   }
   auto &buffer_entry = buffers_[frame_id];
   if (buffer_entry.page_->IsDirty()) {
-    auto table_page = std::make_unique<TablePage>(buffer_entry.page_);
+    auto table_page = std::make_unique<PageHeader>(buffer_entry.page_);
     log_manager_.FlushPage(buffer_entry.table_oid_, buffer_entry.page_id_, table_page->GetPageLSN());
     assert(buffer_entry.db_oid_ != SYSTEM_DATABASE_OID);
     disk_.WritePage(Disk::GetFilePath(buffer_entry.db_oid_, buffer_entry.table_oid_), buffer_entry.page_id_,

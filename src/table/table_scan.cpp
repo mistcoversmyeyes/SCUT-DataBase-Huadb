@@ -1,6 +1,6 @@
 #include "table/table_scan.h"
 
-#include "table/table_page.h"
+#include "table/page_header.h"
 
 namespace huadb {
 

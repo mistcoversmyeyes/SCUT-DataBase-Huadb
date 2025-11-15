@@ -27,14 +27,14 @@ class Table {
   // 获取表的第一个页面的页面号
   pageid_t GetFirstPageId() const;
 
-  oid_t GetOid() const;
+  oid_t GetTableOid() const;
   oid_t GetDbOid() const;
   const ColumnList &GetColumnList() const;
 
  private:
   BufferPool &buffer_pool_;
   LogManager &log_manager_;
-  oid_t oid_;
+  oid_t table_oid_;
   oid_t db_oid_;
   pageid_t first_page_id_;  // 第一个页面的页面号
   ColumnList column_list_;  // 表的 schema 信息

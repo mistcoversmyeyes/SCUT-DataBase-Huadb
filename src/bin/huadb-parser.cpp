@@ -6,7 +6,7 @@
 
 #include "argparse/argparse.hpp"
 #include "common/constants.h"
-#include "table/table_page.h"
+#include "table/page_header.h"
 
 namespace fs = std::filesystem;
 
@@ -57,7 +57,7 @@ void parse_data(const fs::path &path) {
     }
     auto page = std::make_unique<huadb::Page>();
     memcpy(page->GetData(), buffer, huadb::DB_PAGE_SIZE);
-    huadb::TablePage table_page(std::move(page));
+    huadb::PageHeader table_page(std::move(page));
     std::cout << "page id: " << page_id << std::endl;
     std::cout << table_page.ToString() << std::endl;
     page_id++;

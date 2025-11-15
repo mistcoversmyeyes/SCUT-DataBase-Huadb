@@ -14,9 +14,9 @@ static constexpr db_size_t PAGE_HEADER_SIZE = sizeof(lsn_t) + sizeof(pageid_t) +
 
 class ColumnList;
 
-class TablePage {
+class PageHeader {
  public:
-  explicit TablePage(std::shared_ptr<Page> page);
+  explicit PageHeader(std::shared_ptr<Page> page);
 
   // 页面初始化
   void Init();
@@ -59,13 +59,13 @@ class TablePage {
   std::string ToString() const;
 
  private:
-  std::shared_ptr<Page> page_;
-  char *page_data_;
-  lsn_t *page_lsn_;         // LAB 2: PageLSN
-  pageid_t *next_page_id_;  // 下一个页面的页面号
-  db_size_t *lower_;        // 页面 lower 指针
-  db_size_t *upper_;        // 页面 upper 指针
-  Slot *slots_;             // 槽位数组
+ char *page_data_;
+ lsn_t *page_lsn_;         // LAB 2: PageLSN
+ pageid_t *next_page_id_;  // 下一个页面的页面号
+ db_size_t *lower_;        // 页面 lower 指针
+ db_size_t *upper_;        // 页面 upper 指针
+ Slot *slots_;             // 槽位数组
+ std::shared_ptr<Page> page_;
 };
 
 }  // namespace huadb

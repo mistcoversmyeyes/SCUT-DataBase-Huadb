@@ -1,10 +1,10 @@
-#include "table/table_page.h"
+#include "table/page_header.h"
 
 #include <sstream>
 
 namespace huadb {
 
-TablePage::TablePage(std::shared_ptr<Page> page) : page_(page) {
+PageHeader::PageHeader(std::shared_ptr<Page> page) : page_(page) {
   page_data_ = page->GetData();
   db_size_t offset = 0;
   page_lsn_ = reinterpret_cast<lsn_t *>(page_data_);
@@ -19,7 +19,7 @@ TablePage::TablePage(std::shared_ptr<Page> page) : page_(page) {
   slots_ = reinterpret_cast<Slot *>(page_data_ + PAGE_HEADER_SIZE);
 }
 
-void TablePage::Init() {
+void PageHeader::Init() {
   *page_lsn_ = 0;
   *next_page_id_ = NULL_PAGE_ID;
   *lower_ = PAGE_HEADER_SIZE;
@@ -27,7 +27,7 @@ void TablePage::Init() {
   page_->SetDirty();
 }
 
-slotid_t TablePage::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid_t cid) {
+slotid_t PageHeader::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid_t cid) {
   // 在记录头添加事务信息（xid 和 cid）
   // LAB 3 BEGIN
 
@@ -40,7 +40,7 @@ slotid_t TablePage::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid_
   return 0;
 }
 
-void TablePage::DeleteRecord(slotid_t slot_id, xid_t xid) {
+void PageHeader::DeleteRecord(slotid_t slot_id, xid_t xid) {
   // 更改实验 1 的实现，改为通过 xid 标记删除
   // LAB 3 BEGIN
 
@@ -50,19 +50,19 @@ void TablePage::DeleteRecord(slotid_t slot_id, xid_t xid) {
   // LAB 1 BEGIN
 }
 
-void TablePage::UpdateRecordInPlace(const Record &record, slotid_t slot_id) {
+void PageHeader::UpdateRecordInPlace(const Record &record, slotid_t slot_id) {
   record.SerializeTo(page_data_ + slots_[slot_id].offset_);
   page_->SetDirty();
 }
 
-std::shared_ptr<Record> TablePage::GetRecord(Rid rid, const ColumnList &column_list) {
+std::shared_ptr<Record> PageHeader::GetRecord(Rid rid, const ColumnList &column_list) {
   // 根据 slot_id 获取 record
   // 新建 record 并设置 rid
   // LAB 1 BEGIN
   return nullptr;
 }
 
-void TablePage::UndoDeleteRecord(slotid_t slot_id) {
+void PageHeader::UndoDeleteRecord(slotid_t slot_id) {
   // 修改 undo delete 的逻辑
   // LAB 3 BEGIN
 
@@ -71,24 +71,24 @@ void TablePage::UndoDeleteRecord(slotid_t slot_id) {
   // LAB 2 BEGIN
 }
 
-void TablePage::RedoInsertRecord(slotid_t slot_id, char *raw_record, db_size_t page_offset, db_size_t record_size) {
+void PageHeader::RedoInsertRecord(slotid_t slot_id, char *raw_record, db_size_t page_offset, db_size_t record_size) {
   // 将 raw_record 写入 page data
   // 注意维护 lower 和 upper 指针，以及 slots 数组
   // 将页面设为 dirty
   // LAB 2 BEGIN
 }
 
-db_size_t TablePage::GetRecordCount() const { return (*lower_ - PAGE_HEADER_SIZE) / sizeof(Slot); }
+db_size_t PageHeader::GetRecordCount() const { return (*lower_ - PAGE_HEADER_SIZE) / sizeof(Slot); }
 
-lsn_t TablePage::GetPageLSN() const { return *page_lsn_; }
+lsn_t PageHeader::GetPageLSN() const { return *page_lsn_; }
 
-pageid_t TablePage::GetNextPageId() const { return *next_page_id_; }
+pageid_t PageHeader::GetNextPageId() const { return *next_page_id_; }
 
-db_size_t TablePage::GetLower() const { return *lower_; }
+db_size_t PageHeader::GetLower() const { return *lower_; }
 
-db_size_t TablePage::GetUpper() const { return *upper_; }
+db_size_t PageHeader::GetUpper() const { return *upper_; }
 
-db_size_t TablePage::GetFreeSpaceSize() const {
+db_size_t PageHeader::GetFreeSpaceSize() const {
   if (*upper_ < *lower_ + sizeof(Slot)) {
     return 0;
   } else {
@@ -96,17 +96,17 @@ db_size_t TablePage::GetFreeSpaceSize() const {
   }
 }
 
-void TablePage::SetNextPageId(pageid_t page_id) {
+void PageHeader::SetNextPageId(pageid_t page_id) {
   *next_page_id_ = page_id;
   page_->SetDirty();
 }
 
-void TablePage::SetPageLSN(lsn_t page_lsn) {
+void PageHeader::SetPageLSN(lsn_t page_lsn) {
   *page_lsn_ = page_lsn;
   page_->SetDirty();
 }
 
-std::string TablePage::ToString() const {
+std::string PageHeader::ToString() const {
   std::ostringstream oss;
   oss << "TablePage[" << std::endl;
   oss << "  page_lsn: " << *page_lsn_ << std::endl;
