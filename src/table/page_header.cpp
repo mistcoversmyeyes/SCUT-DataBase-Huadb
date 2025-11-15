@@ -14,7 +14,7 @@
 #include "common/types.h"
 #include "storage/page.h"
 #include "table/record.h"
-#include "table/table_page.h"
+#include "table/page_header.h"
 
 namespace huadb {
 
@@ -89,23 +89,30 @@ slotid_t PageHeader::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid
   // 将 record 写入 page data
   // 将 page 标记为 dirty
   // 返回插入的 slot id
-  // LAB 1 BEGIN(Done)
-  
-  // 获取新 slot 的指针
-  db_size_t new_slot_offset = *lower_;
-  Slot* new_slot = reinterpret_cast<Slot*>(page_data_ + new_slot_offset);
+  // LAB 1 BEGIN
+
+  // 计算新slot的id
+  slotid_t slot_id = GetRecordCount();
+
+  // 分配record空间（从高地址向低地址）
+  db_size_t record_size = record->GetSize();
+  *upper_ -= record_size;
+  db_size_t record_offset = *upper_;
+
+  // 序列化record到页面
+  record->SerializeTo(page_data_ + record_offset);
+
+  // 设置slot信息
+  slots_[slot_id].offset_ = record_offset;
+  slots_[slot_id].size_ = record_size;
+
+  // 分配slot空间（从低地址向高地址）
   *lower_ += sizeof(Slot);
 
-  db_size_t new_record_offset = *upper_ - record->GetSize();
-  Record* new_record = reinterpret_cast<Record*>(page_data_ + new_record_offset);
-  *upper_ -= record->GetSize();
-
-  *new_slot = {new_record_offset, record->GetSize()};
-  *new_record = Record(*record);
-
+  // 标记页面为脏页
   page_->SetDirty();
 
-  return 0;
+  return slot_id;
 }
 
 /**

@@ -3,7 +3,7 @@ add_library(
   OBJECT
   record_header.cpp
   record.cpp
-  table_page.cpp
+  page_header.cpp
   table_scan.cpp
   table.cpp
 )
