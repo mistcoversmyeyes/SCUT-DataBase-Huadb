@@ -89,7 +89,7 @@ slotid_t PageHeader::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid
   // 将 record 写入 page data
   // 将 page 标记为 dirty
   // 返回插入的 slot id
-  // LAB 1 BEGIN
+  // LAB 1 BEGIN(Done)
   
   // 获取新 slot 的指针
   db_size_t new_slot_offset = *lower_;
@@ -162,8 +162,26 @@ void PageHeader::UpdateRecordInPlace(const Record &record, slotid_t slot_id) {
 std::shared_ptr<Record> PageHeader::GetRecord(Rid rid, const ColumnList &column_list) {
   // LAB 1: 根据 slot_id 获取 record
   // 新建 record 并设置 rid
-  // LAB 1 BEGIN
-  return nullptr;
+  // LAB 1 BEGIN(Done)
+  if (rid.slot_id_ >= GetRecordCount()) {
+    return nullptr;
+  }
+
+  // 获取槽位信息
+  Slot &slot = slots_[rid.slot_id_];
+  if (slot.offset_ == 0 || slot.size_ == 0) {
+    return nullptr;
+  }
+
+  // 从页面数据中读取记录
+  char *record_data = page_data_ + slot.offset_;
+  auto record = std::make_shared<Record>();
+
+  // 反序列化记录数据
+  record->DeserializeFrom(record_data, column_list);
+  record->SetRid(rid);
+
+  return record;
 }
 
 /**

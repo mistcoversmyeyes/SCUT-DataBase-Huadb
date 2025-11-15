@@ -84,7 +84,7 @@ Rid Table::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid_t cid, bo
   // 4. 创建新页面时需设置前一个页面的 next_page_id，并将新页面初始化
   // 5. 找到空间足够的页面后，通过 PageHeader 插入记录
   // 6. 返回插入记录的 rid
-  // LAB 1 BEGIN
+  // LAB 1 BEGIN(Done)
   
   Rid ret = Rid();
 

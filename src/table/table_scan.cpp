@@ -9,8 +9,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "table/table_scan.h"
+#include <exception>
+#include <memory>
 
+#include "common/constants.h"
+#include "common/types.h"
 #include "table/page_header.h"
+#include "table/record.h"
 
 namespace huadb {
 
@@ -74,8 +79,36 @@ std::shared_ptr<Record> TableScan::GetNextRecord(xid_t xid, IsolationLevel isola
   // 读取时更新 rid_ 变量，避免重复读取
   // 扫描结束时，返回空指针
   // 注意处理扫描空表的情况（rid_.page_id_ 为 NULL_PAGE_ID）
-  // LAB 1 BEGIN
-  return nullptr;
+  // LAB 1 BEGIN(Done)
+
+  if (rid_.page_id_ == NULL_PAGE_ID){
+    return nullptr;
+  }
+
+  auto cur_page = PageHeader(buffer_pool_.GetPage(table_->GetDbOid(), table_->GetTableOid(), rid_.page_id_));
+
+  // 检查当前页面是否扫描完毕
+  if (rid_.slot_id_ >= cur_page.GetRecordCount()){
+    rid_.page_id_ = cur_page.GetNextPageId();
+    rid_.slot_id_ = 0;
+
+    // 如果没有下一个页面，结束扫描
+    if (rid_.page_id_ == NULL_PAGE_ID){
+      return nullptr;
+    }
+
+    // 获取下一个页面继续扫描
+    cur_page = PageHeader(buffer_pool_.GetPage(table_->GetDbOid(), table_->GetTableOid(), rid_.page_id_));
+  }
+
+  // 获取当前记录
+  Rid current_rid = rid_;
+  auto record = cur_page.GetRecord(current_rid, table_->GetColumnList());
+
+  // 移动到下一个记录位置
+  rid_.slot_id_++;
+
+  return record;
 }
 
 }  // namespace huadb
