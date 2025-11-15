@@ -10,7 +10,10 @@
 
 #include "table/table.h"
 
+#include "common/constants.h"
 #include "common/types.h"
+#include "database/connection.h"
+#include "storage/buffer_pool.h"
 #include "table/page_header.h"
 
 namespace huadb {
@@ -82,7 +85,47 @@ Rid Table::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid_t cid, bo
   // 5. 找到空间足够的页面后，通过 PageHeader 插入记录
   // 6. 返回插入记录的 rid
   // LAB 1 BEGIN
-  return {0, 0};
+  
+  Rid ret = Rid();
+
+  // 如果 table 为空，那么调用 BufferPool::NewPage() 从缓冲区中创建一个页面
+  if (first_page_id_ == NULL_PAGE_ID){
+    first_page_id_ = 0;
+    auto first_page = buffer_pool_.NewPage(db_oid_, table_oid_,  first_page_id_);
+    auto page_header = PageHeader(first_page);
+    
+    auto slot_id = page_header.InsertRecord(record, xid, cid);
+    ret = {first_page_id_,slot_id};
+  }
+  
+  // table 不为空，遍历 page 链表直到结束，找到一个空位插入
+  pageid_t cur_page_id = first_page_id_;
+  auto cur_page_header = PageHeader(buffer_pool_.GetPage(db_oid_, table_oid_, cur_page_id));
+  // 对链表中只有一个页的情况做特殊判断
+  if (cur_page_header.GetFreeSpaceSize() > record->GetSize()){
+    auto slot_id = cur_page_header.InsertRecord(record, xid, cid);
+    ret = {cur_page_id, slot_id};
+    return ret;
+  }
+  while (cur_page_header.GetNextPageId() != NULL_PAGE_ID) {
+    if (cur_page_header.GetFreeSpaceSize() > record->GetSize()){
+      auto slot_id = cur_page_header.InsertRecord(record, xid, cid);
+      ret = {cur_page_id, slot_id};
+      return ret;
+    }
+
+    cur_page_id = cur_page_header.GetNextPageId();
+    cur_page_header = PageHeader(buffer_pool_.GetPage(db_oid_, table_oid_, cur_page_id));
+  }
+  
+  // 现有的页面没有空位了，新建一个页面然后将记录插入到新建的页面中
+  pageid_t new_page_id = cur_page_id + 1;
+  auto new_page = buffer_pool_.NewPage(db_oid_, table_oid_, new_page_id);
+  auto new_page_header = PageHeader(new_page);
+  slotid_t slot_id = new_page_header.InsertRecord(record, xid, cid);
+  ret = {new_page_id, slot_id};
+  
+  return ret;
 }
 
 /**

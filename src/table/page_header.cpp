@@ -11,6 +11,10 @@
 #include "table/page_header.h"
 
 #include <sstream>
+#include "common/types.h"
+#include "storage/page.h"
+#include "table/record.h"
+#include "table/table_page.h"
 
 namespace huadb {
 
@@ -86,6 +90,21 @@ slotid_t PageHeader::InsertRecord(std::shared_ptr<Record> record, xid_t xid, cid
   // 将 page 标记为 dirty
   // 返回插入的 slot id
   // LAB 1 BEGIN
+  
+  // 获取新 slot 的指针
+  db_size_t new_slot_offset = *lower_;
+  Slot* new_slot = reinterpret_cast<Slot*>(page_data_ + new_slot_offset);
+  *lower_ += sizeof(Slot);
+
+  db_size_t new_record_offset = *upper_ - record->GetSize();
+  Record* new_record = reinterpret_cast<Record*>(page_data_ + new_record_offset);
+  *upper_ -= record->GetSize();
+
+  *new_slot = {new_record_offset, record->GetSize()};
+  *new_record = Record(*record);
+
+  page_->SetDirty();
+
   return 0;
 }
 
