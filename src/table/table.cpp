@@ -155,6 +155,14 @@ void Table::DeleteRecord(const Rid &rid, xid_t xid, bool write_log) {
 
   // LAB 1: 使用 PageHeader 操作页面
   // LAB 1 BEGIN
+  if (rid.page_id_ == NULL_PAGE_ID){
+    return;
+  }
+
+  auto page = PageHeader(buffer_pool_.GetPage(db_oid_, table_oid_, rid.page_id_));
+  
+  // 删除对应记录
+  page.DeleteRecord(rid.slot_id_, xid);
 }
 
 /**

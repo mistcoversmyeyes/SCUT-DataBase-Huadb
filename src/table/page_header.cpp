@@ -137,6 +137,30 @@ void PageHeader::DeleteRecord(slotid_t slot_id, xid_t xid) {
   // 可使用 Record::DeserializeHeaderFrom 函数读取记录头
   // 将 page 标记为 dirty
   // LAB 1 BEGIN
+  
+  // 检查 slot_id 是否合法
+  if (slot_id > this->GetRecordCount()){
+    return;
+  }
+
+  // 获取记录偏移量
+  auto& slot = slots_[slot_id];
+  auto rec_offset = slot.offset_;
+  char* rec_ptr = page_data_ + rec_offset;
+
+  // 获取记录头
+  Record tmp_rec;
+  tmp_rec.DeserializeHeaderFrom(rec_ptr);
+
+  // 修改记录头的删除位
+  tmp_rec.SetDeleted(true);
+
+  // 将修改后的记录写回页面
+  tmp_rec.SerializeHeaderTo(rec_ptr);
+
+  // 标记页面为脏页
+  page_->SetDirty();
+
 }
 
 /**
