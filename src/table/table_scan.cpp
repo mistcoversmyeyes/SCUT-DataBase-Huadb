@@ -105,6 +105,14 @@ std::shared_ptr<Record> TableScan::GetNextRecord(xid_t xid, IsolationLevel isola
   Rid current_rid = rid_;
   auto record = cur_page.GetRecord(current_rid, table_->GetColumnList());
 
+  // 检查当前的记录是否已被删除
+  if (record->IsDeleted()) {
+    // 获取下一个记录
+    rid_.slot_id_++;
+    return GetNextRecord();
+  }
+
+
   // 移动到下一个记录位置
   rid_.slot_id_++;
 

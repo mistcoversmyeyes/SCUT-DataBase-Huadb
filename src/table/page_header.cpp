@@ -160,7 +160,6 @@ void PageHeader::DeleteRecord(slotid_t slot_id, xid_t xid) {
 
   // 标记页面为脏页
   page_->SetDirty();
-
 }
 
 /**
