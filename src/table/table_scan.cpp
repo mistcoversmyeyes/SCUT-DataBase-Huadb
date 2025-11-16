@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "table/table_scan.h"
+#include <algorithm>
 #include <exception>
 #include <memory>
 
@@ -79,44 +80,31 @@ std::shared_ptr<Record> TableScan::GetNextRecord(xid_t xid, IsolationLevel isola
   // 读取时更新 rid_ 变量，避免重复读取
   // 扫描结束时，返回空指针
   // 注意处理扫描空表的情况（rid_.page_id_ 为 NULL_PAGE_ID）
-  // LAB 1 BEGIN(Done)
+  // LAB 1 BEGIN
 
-  if (rid_.page_id_ == NULL_PAGE_ID){
-    return nullptr;
-  }
+  while (rid_.page_id_ != NULL_PAGE_ID) {
+    // 获取当前页面
+    auto cur_page = PageHeader(
+      buffer_pool_.GetPage(table_->GetDbOid(), table_->GetTableOid(), rid_.page_id_)
+    );
 
-  auto cur_page = PageHeader(buffer_pool_.GetPage(table_->GetDbOid(), table_->GetTableOid(), rid_.page_id_));
+    // 在当前页面中查找有效记录
+    while (rid_.slot_id_ < cur_page.GetRecordCount()) {
+      auto record = cur_page.GetRecord(rid_, table_->GetColumnList());
+      rid_.slot_id_++;  // 先移动指针
 
-  // 检查当前页面是否扫描完毕
-  if (rid_.slot_id_ >= cur_page.GetRecordCount()){
-    rid_.page_id_ = cur_page.GetNextPageId();
-    rid_.slot_id_ = 0;
-
-    // 如果没有下一个页面，结束扫描
-    if (rid_.page_id_ == NULL_PAGE_ID){
-      return nullptr;
+      if (record && !record->IsDeleted()) {
+        return record;  // 找到有效记录
+      }
+      // 否则继续检查下一条
     }
 
-    // 获取下一个页面继续扫描
-    cur_page = PageHeader(buffer_pool_.GetPage(table_->GetDbOid(), table_->GetTableOid(), rid_.page_id_));
+    // 当前页面扫描完毕，移动到下一页
+    rid_.page_id_ = cur_page.GetNextPageId();
+    rid_.slot_id_ = 0;
   }
 
-  // 获取当前记录
-  Rid current_rid = rid_;
-  auto record = cur_page.GetRecord(current_rid, table_->GetColumnList());
-
-  // 检查当前的记录是否已被删除
-  if (record->IsDeleted()) {
-    // 获取下一个记录
-    rid_.slot_id_++;
-    return GetNextRecord();
-  }
-
-
-  // 移动到下一个记录位置
-  rid_.slot_id_++;
-
-  return record;
+  return nullptr;  // 扫描结束
 }
 
 }  // namespace huadb
