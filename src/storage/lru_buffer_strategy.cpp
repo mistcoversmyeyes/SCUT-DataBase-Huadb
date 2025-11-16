@@ -38,6 +38,15 @@ void LRUBufferStrategy::Access(size_t frame_no) {
   // - std::list<size_t>：简单的双向链表，O(n) 查找
   // - std::list + std::unordered_set：O(1) 查找和更新
   // LAB 1 BEGIN
+  auto it = frames.find(frame_no);
+
+  if (it != frames.end()) {
+    lru_.erase(it->second);
+  }
+
+  lru_.push_front(frame_no);
+
+  frames[frame_no] = lru_.begin();
   return;
 };
 
@@ -65,7 +74,16 @@ size_t LRUBufferStrategy::Evict() {
   // 3. 从 LRU 结构中移除该页面
   // 4. 处理空缓冲池的特殊情况
   // LAB 1 BEGIN
-  return 0;
+
+  if (lru_.empty()){
+    return 0;
+  }
+
+  auto frame_no = lru_.back();
+  lru_.pop_back();
+  frames.erase(frame_no);
+
+  return frame_no;
 }
 
 }  // namespace huadb

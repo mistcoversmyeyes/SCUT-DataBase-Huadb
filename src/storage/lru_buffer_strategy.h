@@ -10,6 +10,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <list>
+#include <unordered_map>
+#include "operators/expressions/list.h"
 #include "storage/buffer_strategy.h"
 
 namespace huadb {
@@ -32,9 +36,13 @@ namespace huadb {
  * - 当缓冲池满时，BufferPool 调用 Evict() 获取要淘汰的页面帧号
  */
 class LRUBufferStrategy : public BufferStrategy {
- public:
+public:
   void Access(size_t frame_no) override;
   size_t Evict() override;
+private:
+  std::list<size_t> lru_;
+  std::unordered_map<size_t, std::list<size_t>::iterator> frames;
+
 };
 
 }  // namespace huadb
